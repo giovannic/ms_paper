@@ -441,15 +441,31 @@ Vector controls lead to three possible outcomes. The probabilities of these outc
 
 If IRS is disabled, $\Phi_I = r_S = 0, s_S = 1$. If LLINs are disabled $\Phi_B = r_N = 0, s_N = 1$.
 
+Otherwise,
+
+\begin{gather*}
+    s_S = \frac{k^\prime_S}{k_0} \\
+    r_S = \left(1 - \frac{k^\prime_S}{k_0}\right)\left(\frac{j^\prime_S}{j^\prime_S + l^\prime_S}\right) \\
+    d_S = \left(1 - \frac{k^\prime_S}{k_0}\right)\left(\frac{l^\prime_S}{j^\prime_S + l^\prime_S}\right)
+\end{gather*}
+
+As defined in %TODO
+
+And,
+
+\begin{gather*}
+    s_N = 1 - r_N - d_N \\ % do we want to show this??
+    r_N = (r_{N0} - r_{NM})\exp(-t\gamma_N) + r_{NM} \\
+    d_N = d_{N0}\exp(-t\gamma_N)
+\end{gather*}
+
 \subsubsection*{Treatment}
 
 Treatment diverts humans from clinical and severe infection.
 
 It also provides prophylaxis which is modelled with a weibull curve.
 
-% List equation for prophylaxis
-
-% Table for prophylaxis params
+%TODO: explain rel_c and shape and scale
 
 \subsubsection*{Mass drug administration}
 
@@ -461,7 +477,23 @@ MDA strategies can distribute a specific drug, at a list of timesteps, with spec
 
 RTS,S vaccination can be used to reduce the probability of pre-erthrocytic infection.
 
-% List equation for vaccine efficacy
+We use an antibody profile for vaccine and booster efficacy:
+
+\[
+V(t) = V_{max}\left(1 - \frac{1}{1 + \frac{CS(t)}{\beta}^\alpha_{rtss}}\right)
+\]
+
+Where the antibody level is gamma distributed
+
+\[
+CS(t) = CS_{peak}\left(1 + \left(\frac{r_{peak}t}{k_{PL}}\right)^{k_{PL}}\right)
+\]
+
+after a booster dose:
+
+\[
+CS(t) = CS_{boost}\left(1 + \left(\frac{r_{boost}(t - t_{boost})}{k_{PL}}\right)^{k_{PL}}\right)
+\]
 
 RTS,S vaccines can be distributed in an EPI strategy %what is this
 
@@ -473,11 +505,38 @@ RTS,S vaccines can also be distributed in a mass campaign.
 
 For interventions where a subset is selected. We correlate the sub populations between interventions with the following formulae
 
-% List formulae
+For every round of each intervention, individuals are included in a sub-population if
+
+\begin{gather*}
+    z_{ijt} \leq 0, \\
+    z_{ijt} \sim N(u_{ij}, 1)
+\end{gather*}
+
+We find a $u_{ij}$ to correlate target populations between rounds.
+
+\[u_{ij} \sim MVN(u_0j, V)\]
+
+Where V is a matrix of I x J. and
+
+\[
+V_{jk} =
+\begin{cases} 
+  \sigma_j^2  & j = k \\
+  \sigma_j\sigma_k\rho_{jk} & \text{otherwise}
+\end{cases}
+\]
+
+The marginal standard deviations of $uij$ are given by:
+
+\[\sigma_j = \sqrt{\frac{\rho_j}{1 - \rho_j}}\]
+
+We find a $u_0j$ to create a coverage of $P_j$ with
+
+\[ u_0j = -\Phi^{-1}(P_j)\sqrt{1 + \sigma_j^2} \]
 
 \subsection*{Equilibrium}
 
-\subsubsection*{Demographics}
+We provide a method to initialise the model in equilibrium for non-seasonal dynamics.
 
 \subsubsection*{Human infection states}
 
@@ -588,13 +647,13 @@ Big deal
 %%
 \section*{Tables}
 \begin{table}[h!]
-\caption{Vector control outcomes}
-      \begin{tabular}{cccc}
+\caption{Drug parameters}
+      \begin{tabular}{l | cccc}
         \hline
-        Outcome & IRS + LLINs \\ \hline
-        wi & .\\
-        yi & .\\
-        zi & .\\ \hline
+        Drug acronym & efficacy & rel\_c & shape & scale \\ \hline
+        DHA PQP & .95 & 0.09434 & 4.4 & 28.1\\    
+        AL & .95 & 0.05094 & 11.3 & 10.6\\
+        SP AQ & 0.9 & 0.32 & 4.3 & 38.1\\ \hline
       \end{tabular}
 \end{table}
 
