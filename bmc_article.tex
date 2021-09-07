@@ -99,7 +99,7 @@
 %%                                          %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\title{A hybrid individual based and differential equation based P. Falciparum transmission model}
+\title{A hybrid P. Falciparum transmission model}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%                                          %%
@@ -123,10 +123,10 @@
 ]{\inits{GC}\fnm{Giovanni} \snm{Charles}}
 
 % TODO: other authors (Ellie, Azra)
-\author[
-   addressref={aff1,aff2},
-   email={john.RS.Smith@cambridge.co.uk}
-]{\inits{PW}\fnm{Peter} \snm{Winskill}}
+%\author[
+%   addressref={aff1,aff2},
+%   email={john.RS.Smith@cambridge.co.uk}
+%]{\inits{PW}\fnm{Peter} \snm{Winskill}}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%                                          %%
@@ -138,19 +138,19 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \address[id=aff1]{%                           % unique id
-  \orgname{Department of Zoology, Cambridge}, % university, etc
-  \street{Waterloo Road},                     %
+  \orgname{Department of Infectious Disease, Imperial College London}, % university, etc
+  \street{Praed Street},                      %
   %\postcode{}                                % post or zip code
   \city{London},                              % city
   \cny{UK}                                    % country
 }
-\address[id=aff2]{%
-  \orgname{Marine Ecology Department, Institute of Marine Sciences Kiel},
-  \street{D\"{u}sternbrooker Weg 20},
-  \postcode{24105}
-  \city{Kiel},
-  \cny{Germany}
-}
+%\address[id=aff2]{%
+%  \orgname{Marine Ecology Department, Institute of Marine Sciences Kiel},
+%  \street{D\"{u}sternbrooker Weg 20},
+%  \postcode{24105}
+%  \city{Kiel},
+%  \cny{Germany}
+%}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%                                          %%
@@ -249,34 +249,19 @@ Text for this section.
 %% Background %%
 %%
 \section*{Background}
- * We have made progress towards eradication because of co-ordinated interventions
- * We still have a way to go in areas like ...
- * We have made progress in exploring detailed intervention strategies \cite{griffin_reducing_2010,griffin_estimates_2014,sherrard-smith_systematic_2018,okell_contrasting_2014}
- * Mathematical based models can improve our planning. Eradication, stochasticity, complexity, flexibility.
+We present a model for exploring combined Malaria interventions. The individual-based human and adult mosquito models allow for fine-grained heterogeneity, stochastic outputs, detailed intervention strategies. This is combined with a compartmental model for aquatic (and optionally adult) mosquitoes for fast modelling of emergence dynamics.
 
 \section*{Methods}
 
-We used individual to structure our model. Individual variables and events.
+We present a formulation of P.Falciparum transmission in the presence of interventions. We also include implementation details for the individual based models.
 
 \subsection*{Vector biology}
 
-We modelled the dominant Malaria vectors for P. Falciparum. Their feeding cycle affects their susceptibility to vector controls and infectiousness to humans.
-
 The vector model was split between the aquatic and adult-female stage
 
-\subsubsection*{Aquatic stage}
+\subsubsection*{Aquatic model}
 
-This stage tracks compartments of mosquitoes in larval and pupal states. The emergence of adult mosquitoes is dictated by this model.
-
-The ODEs model the dynamics of ovoposition and mortality of these states.
-
-Carrying capacity drives the mortality of early and late stage mosquitoes.
-
-%TODO: carrying capacity equation
-
-Rainfall is modeled from Fourier analyses of average rainfall
-
-%TODO: rainfall equation
+This compartmental model tracks state of mosquitoes in larval and pupal states. This dictates the emergence of adult female mosquitoes into latter parts of the model. This is from \cite{griffin_reducing_2010}.
 
 \begin{gather*}
     \frac{dE^v}{dt} = \beta_{egg}^v(t) M - \frac{E^v}{de} - \mu_e E^v \left(1 + \frac{E^v + L^v}{K}\right) \\
@@ -284,8 +269,17 @@ Rainfall is modeled from Fourier analyses of average rainfall
     \frac{dP^v}{dt} = \frac{L^v}{dl} - \frac{P^v}{dp} - \mu_p P^v
 \end{gather*}
 
-% TODO: where are these parameters fit from?
-% take from S3 refs 47 -53
+Carrying capacity drives the mortality of early and late stage mosquitoes.
+
+\[
+K = K_0 \frac{R(t)}{\bar{R}}
+\]
+
+Rainfall is modeled from Fourier analyses of average rainfall. This is from \cite{winskill_us_2017}
+
+\[
+R(t) = g_0 + \sum_{i=1}^3 g_i cos(2\pi t i) + h_i sin(2\pi t i)
+\]
 
 \subsubsection*{Adult female mosquitoes}
 
@@ -299,66 +293,41 @@ The adult population can be modeled either individually or with ODEs.
     \frac{dI^v_m}{dt} = \Lambda_M^v(t - \tau) S^v_m(t - \tau) \exp(-\mu^v\tau) - \mu^v I^v_m
 \end{gather*}
 
-We created an individual-based alternative which uses bernoulli processes to model infection and death.
+We created an individual-based alternative which uses Bernoulli processes to model infection and death.
 
-We use a $Mosquito_state$ variable to track the infection state of each mosquito. % TODO image
-
-% TODO: where are these parameters fit from?
-% take from S3 refs 47 -53
+(TODO graph of adult mosquito state transitions)
+% TODO image
 
 \subsection*{Human infection}
 
-Human infection states are stored for each individual. We use bernoulli processes every timestep to transition individuals between infection these states.
+Human infection states are stored for each individual. We use Bernoulli processes every time step to transition individuals between infection these states.
 
+(TODO graph of human infection state transitions)
 %TODO: Graph of infection state transitions
 
 \subsubsection*{Immunity}
 
-Humans have several layers of protection against infection.
+Humans have several layers of protection against infection. Pre-erythrocytic, clinical, detectable and severe immunities are calculated by $b_i, \phi_i, q_i, \theta_i$ respectively. This is from \cite{griffin_reducing_2010}.
 
-\subsubsection*{Pre-erythrocytic}
-
-The first is blood immunity. %what is this%
-
-\[
-b_i(t) = b_0 \left( b_1 + \frac{1 - b_1}{1 + \frac{IB}{IB_0}^{kb}} \right)
-\]
-
-This is tracked by a double per human, $IB$. It is incremented each time a human is bitten. $IB$ also decays exponentially.
-
-\subsubsection*{Clinical}
-
-Then protection from clinical immunity %What is this%
-
-\[
-\phi_i(t) = \phi_0 \left( \phi_1 + \frac{1 - \phi_1}{1 + \frac{I_{CA}(i, t) + I_{CM}(i, t)}{I_{C0}}^{k_c}} \right)
-\]
-
-This is tracked by a double per human, $ICA$. It is incremented each time a human is bitten. $ICA$ also decays exponentially.
-
-A variable $ICM$ is used to track maternal immunity to clinical infection. It is set on the birth of the individual. It also decays every time step.
-
-\subsubsection*{Severe}
-
-Then protection from severe immunity %what is this%
-
-\[
+\begin{gather*}
+b_i(t) = b_0 \left( b_1 + \frac{1 - b_1}{1 + \frac{I_B}{I_{B0}}^{k_b}} \right)\\
+\phi_i(t) = \phi_0 \left( \phi_1 + \frac{1 - \phi_1}{1 + \frac{I_{CA}(i, t) + I_{CM}(i, t)}{I_{C0}}^{k_c}} \right) \\
+q_i(t, a) = d_1 \left( d_1 + \frac{1 - d_{min}}{f_D(i, a)\frac{1 + I_D(i, t)}{I_{D0}}^{k_D}} \right) \\
 \theta_i(t, a) = \theta_0 \left( \theta_1 + \frac{1 - \theta_1}{1 + f_v(i, a)\frac{I_{VA}(i, t) + I_{VM}(i, t)}{I_{V0}}^{k_v}} \right)
-\]
+\end{gather*}
 
 where,
 
-\[
-f_v(i, a) = 1 - \frac{1 - f_{v0}}{1 + \frac{a}{a_v}^{\gamma_v}}
-\]
+\begin{gather*}
+f_v(i, a) = 1 - \frac{1 - f_{v0}}{1 + \frac{a}{a_v}^{\gamma_v}} \\
+f_D(i, a) = 1 - \frac{1 - f_{D0}}{1 + \frac{a}{a_D}^{\gamma_D}}
+\end{gather*}
 
-This is tracked by a double per human, $IVA$. It is incremented each time a human is bitten. $IVA$ also decays exponentially.
-
-A variable $IVM$ is used to track maternal immunity to clinical infection. It is set on the birth of the individual. It also decays every time step.
+Each human's immunity is tracked by the variables, $I_B, I_{CA}, I_{CM}, I_D, I_{VA}, I_{VM}$. These variables are incremented each time a human is exposed and then decay exponentially each time step.
 
 \subsubsection*{Onward infectiousness}
 
-Humans drive infection towards mosquitoes
+Humans drive infection towards mosquitoes. This is from \cite{griffin_reducing_2010}
 
 \[
 \Lambda^v_M(t) = \alpha^v \sum_i c(i, t) \pi(i)
@@ -439,6 +408,8 @@ Vector controls lead to three possible outcomes. The probabilities of these outc
     z_i = \Phi_B(1 - r_S)r_N + \Phi_Ir_S
 \end{gather*}
 
+This is from \cite{griffin_reducing_2010}
+
 If IRS is disabled, $\Phi_I = r_S = 0, s_S = 1$. If LLINs are disabled $\Phi_B = r_N = 0, s_N = 1$.
 
 Otherwise,
@@ -449,8 +420,6 @@ Otherwise,
     d_S = \left(1 - \frac{k^\prime_S}{k_0}\right)\left(\frac{l^\prime_S}{j^\prime_S + l^\prime_S}\right)
 \end{gather*}
 
-As defined in %TODO
-
 And,
 
 \begin{gather*}
@@ -459,23 +428,27 @@ And,
     d_N = d_{N0}\exp(-t\gamma_N)
 \end{gather*}
 
+This is from \cite{sherrard-smith_systematic_2018}
+
 \subsubsection*{Treatment}
 
 Treatment diverts humans from clinical and severe infection.
 
-It also provides prophylaxis which is modelled with a weibull curve.
+Treatment also provides prophylaxis which is modelled with a Weibull curve.
 
-%TODO: explain rel_c and shape and scale
+And treatment leads to a reduction in onward infectiousness by a factor of $rel_c$
+
+This is from \cite{okell_contrasting_2014}
 
 \subsubsection*{Mass drug administration}
 
 Mass drug administration can be used to induce prophylaxis in a large subset of the population.
 
-MDA strategies can distribute a specific drug, at a list of timesteps, with specified coverages, over a specified age range.
+MDA strategies can distribute a specific drug, at a list of time steps, with specified coverages, over a specified age range.
 
 \subsubsection*{Vaccination}
 
-RTS,S vaccination can be used to reduce the probability of pre-erthrocytic infection.
+RTS,S vaccination can be used to reduce the probability of infection.
 
 We use an antibody profile for vaccine and booster efficacy:
 
@@ -514,7 +487,7 @@ For every round of each intervention, individuals are included in a sub-populati
 
 We find a $u_{ij}$ to correlate target populations between rounds.
 
-\[u_{ij} \sim MVN(u_0j, V)\]
+\[u_{ij} \sim MVN(u_{0j}, V)\]
 
 Where V is a matrix of I x J. and
 
@@ -526,43 +499,122 @@ V_{jk} =
 \end{cases}
 \]
 
-The marginal standard deviations of $uij$ are given by:
+The marginal standard deviations of $u_{ij}$ are given by:
 
 \[\sigma_j = \sqrt{\frac{\rho_j}{1 - \rho_j}}\]
 
-We find a $u_0j$ to create a coverage of $P_j$ with
+We find a $u_{0j}$ to create a coverage of $P_j$ with
 
-\[ u_0j = -\Phi^{-1}(P_j)\sqrt{1 + \sigma_j^2} \]
+\[ u_{0j} = -\Phi^{-1}(P_j)\sqrt{1 + \sigma_j^2} \]
 
 \subsection*{Equilibrium}
 
-We provide a method to initialise the model in equilibrium for non-seasonal dynamics.
+We provide a method to initialise the model for an equilibrium EIR for non-seasonal dynamics.
 
 \subsubsection*{Human infection states}
 
+The human infection states ${S, D, A, U}$ are sampled based on the equilibrium proportion in the given state for the given individual's age.
+
+The proportions are given by:
+
+% is it ok to disregard treatment like this?
+\begin{gather*}
+    D_i = \frac{r_{i-1}D_{i-1} + \phi_i\Lambda_iY_i}{\beta_{D_i}} \\
+    A_i = \frac{r_{i-1}A_{i-1} + (1-\phi_i)\Lambda_iY_i + r_DD_i}{\beta_{A_i} + (1-\phi_i)\Lambda_i} \\
+    U_i = \frac{r_{i-1}U_{i-1} + r_{A}A_{i}}{\beta_{U_i} + (1-\phi_i)\Lambda_i} \\
+    S_i = \frac{r_{i-1}A_{i-1} + (1-\phi_i)\Lambda_iY_i + r_DD_i}{\beta_{Ai} + (1-\phi_i)\Lambda_i}
+\end{gather*}
+
+where,
+
+\begin{gather*}
+    Y_i = S_i + A_i + U_i = \frac{\pi_i - b_{D_i}}{1 + a_{D_i}} \\
+    a_{D_i} = \frac{\phi_i\Lambda_i}{\beta_{D_i}} \\
+    \beta_{D_i} = r_D + r_i + \eta \\
+    \beta_{A_i} = \phi_i\Lambda_i + r_A + r_i + \eta \\
+    \beta_{U_i} = \Lambda_i + r_U + r_i + \eta
+\end{gather*}
+
 \subsubsection*{Immunity}
 
-\subsubsection*{Mosquito infection states}
+Each human is assigned the average immunity level based on their age.
+
+The average immunity levels are:
+
+\[ I_i = \frac{F_i + r_i + \eta I_{i-1}}{\frac{1}{d} +(r_i + \eta)} \]
+
+where $F$ depends on the type of immunity:
+
+\begin{gather*}
+    F_{B_i} = \frac{\varepsilon_i}{\varepsilon_i u_B + 1} \\
+    F_{C_i} = \frac{\Lambda_i}{\Lambda_i u_B + 1} \\
+    F_{D_i} = \frac{\Lambda_i}{\Lambda_i u_D + 1}
+\end{gather*}
+
+\subsubsection*{Adult mosquito infectious states}
+
+The total number of female adult mosquitoes $M$ can be calculated from the equilibrium EIR $\varepsilon^\ast$ and force of infection towards mosquitoes $\Lambda_M^v$.
+
+\[
+M_v = \frac{\varepsilon^\ast}{\sum_v p_v \alpha_v Q0_v \frac{\Lambda_M^v \exp(\mu \tau)}{\Lambda_M^v + \mu}}
+\]
+
+where the equilibrium $\Lambda_M^v$ can be estimated from the initialised human population.
+
+\subsubsection*{Mosquito aquatic states}
+
+The total number of mosquitoes in the aquatic states can be calculated by:
+
+\begin{gather*}
+    E = 2\omega\mu d_L(1 + d_P\mu_P)M \\
+    L = 2\mu d_L(1 + d_P\mu_P)M \\
+    P = 2d_P\mu M
+\end{gather*}
+
+where,
+
+\begin{multline*}
+\omega = - \frac{1}{2}\left(\gamma\frac{\mu_L}{\mu_E} - \frac{d_E}{d_L} + (\gamma - 1) \mu_L d_E\right) + \\
+\sqrt{\frac{1}{4}\left(\gamma\frac{\mu_L}{\mu_E} - \frac{d_E}{d_L} + (\gamma - 1) \mu_L d_E\right)^2 + \gamma\frac{\beta\mu_L d_E}{2\mu_E\mu d_L(1 + d_P\mu_P)}}
+\end{multline*}
 
 \section*{Results}
 
+\subsection*{Consistency with other models}
+
+Compare with ICDMM and legacy
+
 \subsection*{Strategy exploration}
+
+Show some graphs of hybrid vaccine distribution combined with SMC
 
 \subsection*{Detailed global runs}
 
+Show some aggregated global run data
+
 \section*{Discussion}
 
-\subsection*{Difference with legacy model}
+\subsection*{Differences with legacy model}
 
-\subsection*{Sensitivity analysis}
+Point out the differences in global runs, higher incidence at high EIR.
 
-\subsection*{Spatial aspects}
+\subsection*{Flexibility in the new model}
 
-\subsection*{P. Vivax}
+Hybrid vaccine strategies
+
+\subsection*{Equilibrium}
+
+Setting a good-enough equilibrium leads to quick convergence.
+
+\subsection*{Seasonal slowdowns}
+
+Highly seasonal dynamics lead to a slow ODE.
 
 \section*{Conclusions}
 
-Big deal
+This model works for global runs and for flexible strategy exploration
+
+The code is available on github (refs)
 
 \section*{List of abbreviations}
 
